@@ -1,10 +1,10 @@
 [
     {
-        "module": "../mbed-os-build",
+        "module": "../..",
         "size": {
-            ".text": 38768,
-            ".data": 444,
-            ".bss": 8558,
+            ".text": 64898,
+            ".data": 543,
+            ".bss": 14045,
             ".text-delta": 0,
             ".data-delta": 0,
             ".bss-delta": 0
@@ -13,9 +13,9 @@
     {
         "module": "BUILD/B_L4S5I_IOT01A",
         "size": {
-            ".text": 28436,
-            ".data": 309,
-            ".bss": 66674,
+            ".text": 33078,
+            ".data": 317,
+            ".bss": 67006,
             ".text-delta": 0,
             ".data-delta": 0,
             ".bss-delta": 0
@@ -24,9 +24,9 @@
     {
         "module": "[fill]",
         "size": {
-            ".text": 196,
-            ".data": 10,
-            ".bss": 35,
+            ".text": 252,
+            ".data": 13,
+            ".bss": 40,
             ".text-delta": 0,
             ".data-delta": 0,
             ".bss-delta": 0
@@ -35,8 +35,8 @@
     {
         "module": "[lib]/c.a",
         "size": {
-            ".text": 36016,
-            ".data": 2472,
+            ".text": 52552,
+            ".data": 2474,
             ".bss": 89,
             ".text-delta": 0,
             ".data-delta": 0,
@@ -57,7 +57,7 @@
     {
         "module": "[lib]/m.a",
         "size": {
-            ".text": 2552,
+            ".text": 2572,
             ".data": 1,
             ".bss": 0,
             ".text-delta": 0,
@@ -100,9 +100,9 @@
     },
     {
         "summary": {
-            "static_ram": 78640,
+            "static_ram": 84576,
             "static_ram_delta": 0,
-            "total_flash": 113056,
+            "total_flash": 160552,
             "total_flash_delta": 0
         }
     }
