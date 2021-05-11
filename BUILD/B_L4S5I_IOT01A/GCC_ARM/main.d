@@ -322,6 +322,40 @@ BUILD/B_L4S5I_IOT01A/GCC_ARM/main.o: main.cpp \
  /home/ee2405/ee2405/mbed-os-build/hal/include/hal/mpu_api.h \
  /home/ee2405/ee2405/mbed-os-build/platform/include/platform/ScopedRamExecutionLock.h \
  /home/ee2405/ee2405/mbed-os-build/platform/include/platform/mbed_stats.h \
- 4dgl-ulcd-se/uLCD_4DGL.h \
+ mbed_rpc/mbed_rpc/mbed_rpc.h mbed_rpc/mbed_rpc/rpc.h \
+ mbed_rpc/mbed_rpc/Arguments.h \
+ /home/ee2405/ee2405/mbed-os-build/connectivity/mbedtls/include/mbedtls/platform.h \
+ mbed_rpc/mbed_rpc/RPCVariable.h mbed_rpc/mbed_rpc/RPCFunction.h \
+ mbed_rpc/mbed_rpc/RpcClasses.h 4dgl-ulcd-se/uLCD_4DGL.h \
  /home/ee2405/ee2405/mbed-os-build/platform/include/platform/Stream.h \
- /home/ee2405/ee2405/mbed-os-build/platform/include/platform/FileLike.h
+ /home/ee2405/ee2405/mbed-os-build/platform/include/platform/FileLike.h \
+ BSP_B-L475E-IOT01/Drivers/BSP/B-L475E-IOT01/stm32l475e_iot01_accelero.h \
+ BSP_B-L475E-IOT01/Drivers/BSP/B-L475E-IOT01/stm32l475e_iot01.h \
+ BSP_B-L475E-IOT01/Drivers/BSP/B-L475E-IOT01/../Components/lsm6dsl/lsm6dsl.h \
+ BSP_B-L475E-IOT01/Drivers/BSP/B-L475E-IOT01/../Components/lsm6dsl/../Common/accelero.h \
+ BSP_B-L475E-IOT01/Drivers/BSP/B-L475E-IOT01/../Components/lsm6dsl/../Common/gyro.h \
+ accelerometer_handler.h tensorflowlite_mbed/tensorflow/lite/c/common.h \
+ tensorflowlite_mbed/tensorflow/lite/micro/micro_error_reporter.h \
+ tensorflowlite_mbed/tensorflow/lite/core/api/error_reporter.h \
+ tensorflowlite_mbed/tensorflow/lite/micro/compatibility.h \
+ tensorflowlite_mbed/tensorflow/lite/micro/debug_log.h \
+ tensorflowlite_mbed/tensorflow/lite/micro/debug_log_numbers.h config.h \
+ magic_wand_model_data.h \
+ tensorflowlite_mbed/tensorflow/lite/micro/kernels/micro_ops.h \
+ tensorflowlite_mbed/tensorflow/lite/micro/micro_interpreter.h \
+ tensorflowlite_mbed/tensorflow/lite/core/api/op_resolver.h \
+ tensorflowlite_mbed/tensorflow/lite/schema/schema_generated.h \
+ tensorflowlite_mbed/third_party/flatbuffers/include/flatbuffers/flatbuffers.h \
+ tensorflowlite_mbed/third_party/flatbuffers/include/flatbuffers/base.h \
+ tensorflowlite_mbed/third_party/flatbuffers/include/flatbuffers/stl_emulation.h \
+ tensorflowlite_mbed/tensorflow/lite/kernels/internal/tensor_ctypes.h \
+ tensorflowlite_mbed/tensorflow/lite/kernels/internal/types.h \
+ tensorflowlite_mbed/tensorflow/lite/kernels/internal/compatibility.h \
+ tensorflowlite_mbed/tensorflow/lite/kernels/op_macros.h \
+ tensorflowlite_mbed/tensorflow/lite/micro/micro_allocator.h \
+ tensorflowlite_mbed/tensorflow/lite/core/api/flatbuffer_conversions.h \
+ tensorflowlite_mbed/tensorflow/lite/micro/simple_memory_allocator.h \
+ tensorflowlite_mbed/tensorflow/lite/type_to_tflitetype.h \
+ tensorflowlite_mbed/tensorflow/lite/micro/micro_mutable_op_resolver.h \
+ tensorflowlite_mbed/tensorflow/lite/version.h \
+ tensorflowlite_mbed/tensorflow/core/public/version.h
