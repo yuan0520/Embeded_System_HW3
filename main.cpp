@@ -20,6 +20,10 @@
 #include "MQTTmbed.h"
 #include "MQTTClient.h"
 
+#define RPC_LOOP 0
+#define GESTURE_UI_MODE 1
+#define TILT_ANGLE_DETECTION_MODE 2
+
 WiFiInterface *wifi;
 volatile int message_num = 0;
 volatile int arrivedcount = 0;
@@ -39,9 +43,12 @@ EventQueue acc_queue(32 * EVENTS_EVENT_SIZE); // queue for accelero
 Thread acc_t;
 EventQueue gesture_queue(32 * EVENTS_EVENT_SIZE); // queue for gesture
 Thread gesture_t;
+EventQueue angle_detection_queue(32 * EVENTS_EVENT_SIZE); // queue for angle_detection
+Thread angle_detection_t;
 Thread mqtt_thread(osPriorityHigh);
 EventQueue mqtt_queue;
 
+int mode = RPC_LOOP;
 int angle = 15; // initial value of angle is 15
 int angle_sel = 15;
 float angle_det = 0.0;
@@ -71,7 +78,9 @@ void publish_message_select_angle(MQTT::Client<MQTTNetwork, Countdown>* client_s
     int rc = client_sel->publish(topic1, message);
 
     printf("rc:  %d\r\n", rc);
-    printf("Puslish message: %s\r\n", buff);
+    printf("%s\r\n", buff);
+    printf("Back to RPC Loop, please send a command to call tilt angle detection mode\n");
+    mode = RPC_LOOP;
 }
 
 void close_mqtt() {
@@ -159,6 +168,7 @@ void gesture(Arguments *in, Reply *out){
 }
 
 void gesture_UI_mode(){
+  mode = GESTURE_UI_MODE;
   // Whether we should clear the buffer next time 
   bool should_clear_buffer = false;
   bool got_data = false;
@@ -229,7 +239,7 @@ void gesture_UI_mode(){
 
   error_reporter->Report("Set up successful...\n");
 
-  while (true) {
+  while (mode == GESTURE_UI_MODE) {
 
     // Attempt to read new data from the accelerometer
     got_data = ReadAccelerometer(error_reporter, model_input->data.f,
@@ -264,26 +274,40 @@ void gesture_UI_mode(){
     if(gesture_index == 0){
       printf("gesture 0");
       angle = 15;
-      angle_sel = 15;
+      angle_sel = angle;
       menu_queue.call(menu);
       ThisThread::sleep_for(500ms);
     }
     else if(gesture_index == 1){
       printf("gesture 1");
       angle = 30;
-      angle_sel = 30;
+      angle_sel = angle;
       menu_queue.call(menu);
       ThisThread::sleep_for(500ms);
     }
     else if(gesture_index == 2){
       printf("gesture 2");
       angle = 45;
-      angle_sel = 45;
+      angle_sel = angle;
       menu_queue.call(menu);
       ThisThread::sleep_for(500ms);
     }
     
   }
+}
+
+void angle_detection(Arguments *in, Reply *out);
+RPCFunction angle_detection_RPC(&angle_detection, "angle_detection");
+void angle_detection_mode();
+
+void angle_detection(Arguments *in, Reply *out){
+  printf("Call angle_detection RPC function");
+  angle_detection_t.start(callback(&angle_detection_queue, &EventQueue::dispatch_forever));
+  angle_detection_queue.call(angle_detection_mode);
+}
+
+void angle_detection_mode(){
+
 }
 
 
