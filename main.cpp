@@ -25,12 +25,12 @@
 #define TILT_ANGLE_DETECTION_MODE 2
 
 WiFiInterface *wifi;
-volatile int message_num = 0;
+int message_num = 0;
 volatile int arrivedcount = 0;
 volatile bool closed = false;
 
-const char* topic1 = "angel_sel";
-const char* topic2 = "angel_det";
+const char* topic1 = "angle_sel";
+const char* topic2 = "angle_det";
 
 
 uLCD_4DGL uLCD(D1, D0, D2);
@@ -51,44 +51,15 @@ EventQueue mqtt_queue;
 int mode = RPC_LOOP;
 int angle = 15; // initial value of angle is 15
 int angle_sel = 15;
-float angle_det = 0.0;
+double angle_det = 0.0;
 
-void messageArrived_select_angle(MQTT::MessageData& md) {
-    MQTT::Message &message = md.message;
-    char msg[300];
-    sprintf(msg, "Message arrived: QoS%d, retained %d, dup %d, packetID %d\r\n", message.qos, message.retained, message.dup, message.id);
-    printf(msg);
-    ThisThread::sleep_for(1000ms);
-    char payload[300];
-    sprintf(payload, "Payload %.*s\r\n", message.payloadlen, (char*)message.payload);
-    printf(payload);
-    ++arrivedcount;
-}
-
-void publish_message_select_angle(MQTT::Client<MQTTNetwork, Countdown>* client_sel) {
-    message_num++;
-    MQTT::Message message;
-    char buff[100];
-    sprintf(buff, "The angle we selected is %d degree.", angle_sel);
-    message.qos = MQTT::QOS0;
-    message.retained = false;
-    message.dup = false;
-    message.payload = (void*) buff;
-    message.payloadlen = strlen(buff) + 1;
-    int rc = client_sel->publish(topic1, message);
-
-    printf("rc:  %d\r\n", rc);
-    printf("%s\r\n", buff);
-    printf("Back to RPC Loop, please send a command to call tilt angle detection mode\n");
-    mode = RPC_LOOP;
-}
-
-void close_mqtt() {
-    closed = true;
-}
-
+void menu();
+void menu_selected();
 
 void menu(){
+    uLCD.background_color(WHITE);
+    uLCD.cls();
+    uLCD.textbackground_color(WHITE);
     uLCD.color(BLACK);
     uLCD.locate(1, 2);
     uLCD.printf("\n15\n\n");
@@ -112,6 +83,89 @@ void menu(){
         uLCD.locate(1, 6);
         uLCD.printf("\n45\n\n");
     }
+}
+
+void menu_selected(){
+    uLCD.background_color(WHITE);
+    uLCD.cls();
+    uLCD.textbackground_color(WHITE);
+
+    uLCD.color(BLACK);
+    uLCD.locate(4, 4);
+    uLCD.printf("\nangle_sel: %d\n", angle_sel);
+}
+
+void menu_angle_det(){
+    uLCD.background_color(BLACK);
+    uLCD.cls();
+    uLCD.textbackground_color(BLACK);
+
+    uLCD.color(WHITE);
+    uLCD.locate(4, 4);
+    uLCD.printf("\nangle_det: %.2f\n", angle_det);
+}
+
+void messageArrived_select_angle(MQTT::MessageData& md) {
+    MQTT::Message &message = md.message;
+    char msg[300];
+    sprintf(msg, "Message arrived: QoS%d, retained %d, dup %d, packetID %d\r\n", message.qos, message.retained, message.dup, message.id);
+    printf(msg);
+    ThisThread::sleep_for(1000ms);
+    char payload[300];
+    sprintf(payload, "Payload %.*s\r\n", message.payloadlen, (char*)message.payload);
+    printf(payload);
+    ++arrivedcount;
+}
+
+void messageArrived_det(MQTT::MessageData& md) {
+    MQTT::Message &message = md.message;
+    char msg[300];
+    sprintf(msg, "Message arrived: QoS%d, retained %d, dup %d, packetID %d\r\n", message.qos, message.retained, message.dup, message.id);
+    printf(msg);
+    ThisThread::sleep_for(1000ms);
+    char payload[300];
+    sprintf(payload, "Payload %.*s\r\n", message.payloadlen, (char*)message.payload);
+    printf(payload);
+    ++arrivedcount;
+}
+
+void publish_message_select_angle(MQTT::Client<MQTTNetwork, Countdown>* client_sel) {
+    // message_num++;
+    MQTT::Message message;
+    char buff[100];
+    sprintf(buff, "The angle we selected is %d degree.", angle_sel);
+    message.qos = MQTT::QOS0;
+    message.retained = false;
+    message.dup = false;
+    message.payload = (void*) buff;
+    message.payloadlen = strlen(buff) + 1;
+    int rc = client_sel->publish(topic1, message);
+
+    printf("rc:  %d\r\n", rc);
+    printf("%s\r\n", buff);
+    // printf("Back to RPC Loop, please send a command to call tilt angle detection mode\n\n");
+    menu_queue.call(menu_selected);
+    mode = RPC_LOOP;
+}
+
+void publish_message_det(MQTT::Client<MQTTNetwork, Countdown>* client_det) {
+    message_num++;
+    MQTT::Message message;
+    char buff[100];
+    sprintf(buff, "The detected angle is %.2f degree, count:%d", angle_det, message_num);
+    message.qos = MQTT::QOS0;
+    message.retained = false;
+    message.dup = false;
+    message.payload = (void*) buff;
+    message.payloadlen = strlen(buff) + 1;
+    int rc = client_det->publish(topic2, message);
+
+    printf("rc:  %d\r\n", rc);
+    printf("%s\r\n", buff);
+}
+
+void close_mqtt() {
+    closed = true;
 }
 
 constexpr int kTensorArenaSize = 60 * 1024;
@@ -161,14 +215,27 @@ void gesture(Arguments *in, Reply *out);
 RPCFunction gesture_RPC(&gesture, "gesture");
 void gesture_UI_mode();
 
+void back(Arguments *in, Reply *out);
+RPCFunction back_RPC(&back, "back");
+
+void back_finished(Arguments *in, Reply *out);
+RPCFunction back_RPC2(&back_finished, "back_finished");
+
+void angle_detection(Arguments *in, Reply *out);
+RPCFunction angle_detection_RPC(&angle_detection, "angle_d");
+void angle_detection_mode();
+
 void gesture(Arguments *in, Reply *out){
-  printf("Call gesture RPC function");
+  // printf("Call gesture RPC function\n");
   gesture_t.start(callback(&gesture_queue, &EventQueue::dispatch_forever));
   gesture_queue.call(gesture_UI_mode);
 }
 
 void gesture_UI_mode(){
   mode = GESTURE_UI_MODE;
+  printf("Enter gesture UI mode.\n\n");
+  // ThisThread::sleep_for(500ms);
+  menu_queue.call(menu);
   // Whether we should clear the buffer next time 
   bool should_clear_buffer = false;
   bool got_data = false;
@@ -272,21 +339,21 @@ void gesture_UI_mode(){
 
     // judge gesture and select specific angle
     if(gesture_index == 0){
-      printf("gesture 0");
+      printf("gesture 0\n");
       angle = 15;
       angle_sel = angle;
       menu_queue.call(menu);
       ThisThread::sleep_for(500ms);
     }
     else if(gesture_index == 1){
-      printf("gesture 1");
+      printf("gesture 1\n");
       angle = 30;
       angle_sel = angle;
       menu_queue.call(menu);
       ThisThread::sleep_for(500ms);
     }
     else if(gesture_index == 2){
-      printf("gesture 2");
+      printf("gesture 2\n");
       angle = 45;
       angle_sel = angle;
       menu_queue.call(menu);
@@ -296,20 +363,94 @@ void gesture_UI_mode(){
   }
 }
 
-void angle_detection(Arguments *in, Reply *out);
-RPCFunction angle_detection_RPC(&angle_detection, "angle_detection");
-void angle_detection_mode();
+void back(Arguments *in, Reply *out){
+  mode = RPC_LOOP;
+  printf("Back to RPC loop.\n\n");
+  // ThisThread::sleep_for(500ms);
+}
+
+void back_finished(Arguments *in, Reply *out){
+  mode = RPC_LOOP;
+  printf("Back to RPC loop.\n\n");
+  angle = 15;
+  angle_sel = 15;
+  angle_det = 0.0;
+  ThisThread::sleep_for(1000ms);
+  menu_queue.call(menu);
+  message_num = 0;
+}
 
 void angle_detection(Arguments *in, Reply *out){
-  printf("Call angle_detection RPC function");
+  // printf("Call angle_detection RPC function\n\n");
   angle_detection_t.start(callback(&angle_detection_queue, &EventQueue::dispatch_forever));
   angle_detection_queue.call(angle_detection_mode);
 }
 
 void angle_detection_mode(){
+    mode = TILT_ANGLE_DETECTION_MODE;
+    printf("Enter angle detection mode.\n\n");
+
+    NetworkInterface* net = wifi;
+    MQTTNetwork mqttNetwork(net);
+    MQTT::Client<MQTTNetwork, Countdown> client_det(mqttNetwork);
+
+
+    //TODO: revise host to your IP
+    const char* host = "172.20.10.10";
+    printf("Connecting to TCP network...\r\n");
+
+    SocketAddress sockAddr;
+    sockAddr.set_ip_address(host);
+    sockAddr.set_port(1883);
+
+    printf("address is %s/%d\r\n", (sockAddr.get_ip_address() ? sockAddr.get_ip_address() : "None"),  (sockAddr.get_port() ? sockAddr.get_port() : 0) ); //check setting
+
+    int rc = mqttNetwork.connect(sockAddr);//(host, 1883);
+    if (rc != 0) {
+            printf("Connection error.");
+            //return -1;
+    }
+    printf("client_det successfully connected!\r\n");
+
+    MQTTPacket_connectData data = MQTTPacket_connectData_initializer;
+    data.MQTTVersion = 3;
+    data.clientID.cstring = "detection";
+
+    if ((rc = client_det.connect(data)) != 0){
+            printf("Fail to connect MQTT\r\n");
+    }
+    if (client_det.subscribe(topic2, MQTT::QOS0, messageArrived_det) != 0){
+            printf("Fail to subscribe\r\n");
+    }
+
+    int16_t ref_XYZ[3] = {0};
+    int16_t real_XYZ[3] = {0};
+    double mag_A;
+    double mag_B;
+    double cos_value;
+    double rad;
+
+    BSP_ACCELERO_AccGetXYZ(ref_XYZ);
+    printf("Reference XYZ value: %d, %d, %d\n", ref_XYZ[0], ref_XYZ[1], ref_XYZ[2]);
+
+    while (mode == TILT_ANGLE_DETECTION_MODE) {
+        BSP_ACCELERO_AccGetXYZ(real_XYZ);
+        printf("detected XYZ value: %d, %d, %d", real_XYZ[0], real_XYZ[1], real_XYZ[2]);
+        mag_A = sqrt(ref_XYZ[0]*ref_XYZ[0] + ref_XYZ[1]*ref_XYZ[1] + ref_XYZ[2]*ref_XYZ[2]);
+        mag_B = sqrt(real_XYZ[0]*real_XYZ[0] + real_XYZ[1]*real_XYZ[1] + real_XYZ[2]*real_XYZ[2]);
+        cos_value = ((ref_XYZ[0]*real_XYZ[0] + ref_XYZ[1]*real_XYZ[1] + ref_XYZ[2]*real_XYZ[2])/(mag_A)/(mag_B));
+        rad = acos(cos_value);
+        angle_det = 180.0 * rad/M_PI;
+        printf("  angle_det = %.2f\r\n", angle_det);
+        menu_queue.call(menu_angle_det);
+
+        if (angle_det > angle_sel) {
+            mqtt_queue.call(&publish_message_det, &client_det);
+        }
+        ThisThread::sleep_for(500ms);
+    }
 
 }
-
 
 
 int main(){
@@ -360,7 +501,7 @@ int main(){
         printf("Connection error.");
         // return -1;
     }
-    printf("Successfully connected!\r\n");
+    printf("client_sel Successfully connected!\r\n");
 
     MQTTPacket_connectData data = MQTTPacket_connectData_initializer;
     data.MQTTVersion = 3;
