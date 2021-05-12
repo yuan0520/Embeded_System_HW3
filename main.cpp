@@ -28,11 +28,14 @@ WiFiInterface *wifi;
 int message_num = 0;
 volatile int arrivedcount = 0;
 volatile bool closed = false;
+int blink_time = 10;
 
 const char* topic1 = "angle_sel";
 const char* topic2 = "angle_det";
 
-
+DigitalOut myled1(LED1);
+DigitalOut myled2(LED2);
+DigitalOut myled3(LED3);
 uLCD_4DGL uLCD(D1, D0, D2);
 InterruptIn user_btn(USER_BUTTON);
 BufferedSerial pc(USBTX, USBRX);
@@ -47,11 +50,26 @@ EventQueue angle_detection_queue(32 * EVENTS_EVENT_SIZE); // queue for angle_det
 Thread angle_detection_t;
 Thread mqtt_thread(osPriorityHigh);
 EventQueue mqtt_queue;
+EventQueue LED_queue(32 * EVENTS_EVENT_SIZE);
+Thread LED_t;
 
 int mode = RPC_LOOP;
 int angle = 15; // initial value of angle is 15
 int angle_sel = 15;
 double angle_det = 0.0;
+
+void myLED1(){
+  myled1 = !myled1;
+}
+
+void myLED2(){
+  myled2 = !myled2;
+}
+
+void myLED3(){
+  myled3 = !myled3;
+}
+
 
 void menu();
 void menu_selected();
@@ -141,7 +159,7 @@ void publish_message_select_angle(MQTT::Client<MQTTNetwork, Countdown>* client_s
     message.payloadlen = strlen(buff) + 1;
     int rc = client_sel->publish(topic1, message);
 
-    printf("rc:  %d\r\n", rc);
+    // printf("rc:  %d\r\n", rc);
     printf("%s\r\n", buff);
     // printf("Back to RPC Loop, please send a command to call tilt angle detection mode\n\n");
     menu_queue.call(menu_selected);
@@ -160,7 +178,7 @@ void publish_message_det(MQTT::Client<MQTTNetwork, Countdown>* client_det) {
     message.payloadlen = strlen(buff) + 1;
     int rc = client_det->publish(topic2, message);
 
-    printf("rc:  %d\r\n", rc);
+    // printf("rc:  %d\r\n", rc);
     printf("%s\r\n", buff);
 }
 
@@ -236,6 +254,13 @@ void gesture_UI_mode(){
   printf("Enter gesture UI mode.\n\n");
   // ThisThread::sleep_for(500ms);
   menu_queue.call(menu);
+
+  while(blink_time--){
+    LED_queue.call(myLED1);
+    ThisThread::sleep_for(200ms);
+  }
+  blink_time = 10;
+  
   // Whether we should clear the buffer next time 
   bool should_clear_buffer = false;
   bool got_data = false;
@@ -365,13 +390,13 @@ void gesture_UI_mode(){
 
 void back(Arguments *in, Reply *out){
   mode = RPC_LOOP;
-  printf("Back to RPC loop.\n\n");
+  printf("\nStop gesture_UI mode.\nBack to RPC loop.\n\n");
   // ThisThread::sleep_for(500ms);
 }
 
 void back_finished(Arguments *in, Reply *out){
   mode = RPC_LOOP;
-  printf("Back to RPC loop.\n\n");
+  printf("\nStop tilt angle detection mode.\nBack to RPC loop.\n\n");
   angle = 15;
   angle_sel = 15;
   angle_det = 0.0;
@@ -389,6 +414,12 @@ void angle_detection(Arguments *in, Reply *out){
 void angle_detection_mode(){
     mode = TILT_ANGLE_DETECTION_MODE;
     printf("Enter angle detection mode.\n\n");
+    while(blink_time--){
+      LED_queue.call(myLED2);
+      ThisThread::sleep_for(200ms);
+    }
+    blink_time = 10;
+    ThisThread::sleep_for(2000ms);
 
     NetworkInterface* net = wifi;
     MQTTNetwork mqttNetwork(net);
@@ -410,7 +441,7 @@ void angle_detection_mode(){
             printf("Connection error.");
             //return -1;
     }
-    printf("client_det successfully connected!\r\n");
+    printf("client_det successfully connected!\r\n\n");
 
     MQTTPacket_connectData data = MQTTPacket_connectData_initializer;
     data.MQTTVersion = 3;
@@ -430,8 +461,27 @@ void angle_detection_mode(){
     double cos_value;
     double rad;
 
+    while(blink_time--){
+      LED_queue.call(myLED3);
+      ThisThread::sleep_for(200ms);
+    }
+    blink_time = 10;
+
+    printf("Start to measure reference XYZ value.\n");
+    ThisThread::sleep_for(3000ms);
+
     BSP_ACCELERO_AccGetXYZ(ref_XYZ);
-    printf("Reference XYZ value: %d, %d, %d\n", ref_XYZ[0], ref_XYZ[1], ref_XYZ[2]);
+    printf("Finish measuring reference XYZ value.\n");
+    printf("Reference XYZ value: %d, %d, %d\n\n", ref_XYZ[0], ref_XYZ[1], ref_XYZ[2]);
+
+    while(blink_time--){
+      LED_queue.call(myLED3);
+      ThisThread::sleep_for(200ms);
+    }
+    blink_time = 10;
+    ThisThread::sleep_for(1000ms);
+
+    printf("Start to detect tilt angle.\n\n");
 
     while (mode == TILT_ANGLE_DETECTION_MODE) {
         BSP_ACCELERO_AccGetXYZ(real_XYZ);
@@ -441,7 +491,7 @@ void angle_detection_mode(){
         cos_value = ((ref_XYZ[0]*real_XYZ[0] + ref_XYZ[1]*real_XYZ[1] + ref_XYZ[2]*real_XYZ[2])/(mag_A)/(mag_B));
         rad = acos(cos_value);
         angle_det = 180.0 * rad/M_PI;
-        printf("  angle_det = %.2f\r\n", angle_det);
+        printf("  angle_det = %.2f\r\n\n", angle_det);
         menu_queue.call(menu_angle_det);
 
         if (angle_det > angle_sel) {
@@ -465,6 +515,8 @@ int main(){
     printf("Start accelerometer init\n");
     BSP_ACCELERO_Init();
     acc_t.start(callback(&menu_queue, &EventQueue::dispatch_forever));
+
+    LED_t.start(callback(&LED_queue, &EventQueue::dispatch_forever));
 
     // mqtt_thread.start(callback(&mqtt_queue, &EventQueue::dispatch_forever));
 
